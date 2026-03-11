@@ -1,13 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Landing from './components/Landing';
 import ZipLookup from './components/ZipLookup';
 import IssueSelector from './components/IssueSelector';
 import PositionSelector from './components/PositionSelector';
 import ProgressStepper from './components/ProgressStepper';
+import RepCard from './components/RepCard';
 import { Representative } from './types';
 import { generateLetter } from './services/gemini';
 
 type Step = 'landing' | 'zip' | 'reps' | 'issue' | 'position' | 'generate';
+
+const TIPS = [
+  "Tip: For issues tied to a specific bill or vote, call the DC office. For local impact stories, call the district office — both matter",
+  "Tip: Staffers read constituent mail and report back to the Member — your letter matters",
+  "Tip: Personalizing your letter makes it stand out from form mail, which can often become lost in the mix.",
+  "Tip: Following up once, about two weeks later, reinforces your message"
+];
+
+function TipCarousel() {
+  const [tipIndex, setTipIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTipIndex((prev) => (prev + 1) % TIPS.length);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <p className="text-sm text-slate-300 italic mt-4">
+      {TIPS[tipIndex]}
+    </p>
+  );
+}
 
 function App() {
   const [step, setStep] = useState<Step>('landing');
@@ -22,11 +48,100 @@ function App() {
   const [generatedLetter, setGeneratedLetter] = useState<string>('');
   const [generatedPhoneScript, setGeneratedPhoneScript] = useState<string>('');
   const [generating, setGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState(false);
+  const [repBios, setRepBios] = useState<Map<string, string>>(new Map());
+  const [loadingBios, setLoadingBios] = useState(false);
 
-  const handleRepsFound = (reps: Representative[], hasDistrict: boolean) => {
+  const handleRepsFound = async (reps: Representative[], hasDistrict: boolean) => {
     setRepresentatives(reps);
     setHasSpecificDistrict(hasDistrict);
     setStep('reps');
+
+    // Pre-load all bios
+    setLoadingBios(true);
+    const biosMap = new Map<string, string>();
+
+    // Load cached bios from localStorage
+    const cachedBios = localStorage.getItem('repBios');
+    const bioCache: Record<string, string> = cachedBios ? JSON.parse(cachedBios) : {};
+
+    const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
+    const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+
+    // DEV MODE: Set to true to use mock bios and skip API calls
+    const USE_MOCK_BIOS = true;
+
+    console.log('Fetching bios for', reps.length, 'representatives');
+
+    await Promise.all(
+      reps.map(async (rep) => {
+        // Check cache first
+        if (bioCache[rep.name]) {
+          console.log('Using cached bio for:', rep.name);
+          biosMap.set(rep.name, bioCache[rep.name]);
+          return;
+        }
+
+        // Mock bio for development
+        if (USE_MOCK_BIOS) {
+          const mockBio = `${rep.name} has served in ${rep.office} representing their constituents on key issues including healthcare, infrastructure, and economic policy. Known for bipartisan collaboration and constituent services. They have been a vocal advocate for their district's priorities in Congress.`;
+          console.log('Using mock bio for:', rep.name);
+          biosMap.set(rep.name, mockBio);
+          bioCache[rep.name] = mockBio;
+          return;
+        }
+
+        try {
+          console.log('Fetching bio for:', rep.name);
+          const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `In 3-4 sentences, summarize ${rep.name}'s political background, notable positions, and general voting record. Write for a general audience with no jargon.`
+                }]
+              }]
+            })
+          });
+
+          console.log('Response for', rep.name, ':', response.status);
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Data for', rep.name, ':', data);
+            const bio = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (bio) {
+              console.log('Setting bio for', rep.name);
+              biosMap.set(rep.name, bio);
+              // Cache the bio
+              bioCache[rep.name] = bio;
+            } else {
+              console.error('No bio text for', rep.name);
+            }
+          } else {
+            const errorText = await response.text();
+            console.error(`API error for ${rep.name}:`, response.status, errorText);
+            // If rate limited, add placeholder so UI still works
+            if (response.status === 429) {
+              biosMap.set(rep.name, `${rep.name} represents ${rep.office}. [Bio temporarily unavailable due to API rate limits]`);
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to fetch bio for ${rep.name}:`, error);
+        }
+      })
+    );
+
+    // Save updated cache to localStorage
+    localStorage.setItem('repBios', JSON.stringify(bioCache));
+
+    console.log('All bios fetched. Map size:', biosMap.size);
+    console.log('Map contents:', Array.from(biosMap.entries()));
+    setRepBios(biosMap);
+    setLoadingBios(false);
   };
 
   const handleContinueToIssue = () => {
@@ -46,9 +161,12 @@ function App() {
     setPosition(pos);
     setPersonalNote(note);
     setStep('generate');
+    await generateContent(pos, note);
+  };
 
-    // Auto-generate on reaching this step
+  const generateContent = async (pos: 'support' | 'oppose', note: string) => {
     setGenerating(true);
+    setGenerationError(false);
     try {
       const result = await generateLetter({
         representatives: selectedRep ? [selectedRep] : [],
@@ -61,8 +179,15 @@ function App() {
       setGeneratedPhoneScript(result.phoneScript);
     } catch (error) {
       console.error('Failed to generate content:', error);
+      setGenerationError(true);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleRetryGeneration = () => {
+    if (position) {
+      generateContent(position, personalNote);
     }
   };
 
@@ -114,37 +239,49 @@ function App() {
                 </p>
                 <div className="space-y-3 mb-6">
                   {representatives.map((rep, index) => (
-                    <button
+                    <RepCard
                       key={index}
+                      rep={rep}
                       onClick={() => setSelectedRep(rep)}
-                      className={`w-full text-left rounded-lg p-5 border-2 transition-all ${selectedRep === rep
-                        ? 'border-blue-500 bg-blue-900/20'
-                        : 'border-slate-700 bg-[#0f1729] hover:border-slate-600'
-                        }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-1">{rep.name}</h3>
-                          <p className="text-sm text-slate-200 mb-2">{rep.office}</p>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${rep.party?.includes('Democratic') ? 'bg-blue-500' : rep.party?.includes('Republican') ? 'bg-red-500' : 'bg-gray-500'}`}></div>
-                            <p className="text-sm text-slate-200">{rep.party}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
+                      selected={selectedRep === rep}
+                    />
                   ))}
                 </div>
-                <button
-                  onClick={handleContinueToIssue}
-                  disabled={!selectedRep}
-                  className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors ${selectedRep
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                    }`}
-                >
-                  Continue to Select Issue
-                </button>
+
+                {selectedRep && (
+                  <div className="mt-6 p-5 bg-slate-800/50 rounded-lg border border-slate-700">
+                    {loadingBios ? (
+                      <div className="flex items-center gap-3 text-slate-300">
+                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                        <span className="text-sm">Loading representative info...</span>
+                      </div>
+                    ) : (
+                      <>
+                        {repBios.get(selectedRep.name) && (
+                          <div className="mb-4">
+                            <p className="text-sm text-slate-200 leading-relaxed">{repBios.get(selectedRep.name)}</p>
+                          </div>
+                        )}
+                        {selectedRep.urls && selectedRep.urls.length > 0 && (
+                          <a
+                            href={selectedRep.urls[0]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-sm text-blue-400 hover:text-blue-300 mb-4"
+                          >
+                            View official website →
+                          </a>
+                        )}
+                        <button
+                          onClick={handleContinueToIssue}
+                          className="w-full py-3 px-6 rounded-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors mt-4"
+                        >
+                          Continue with {selectedRep.name} →
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -181,12 +318,29 @@ function App() {
 
                 {generating && (
                   <div className="text-center text-slate-200 py-12">
-                    <p className="text-lg mb-4">Generating your personalized messages...</p>
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="text-lg mb-2">Writing your letter... this usually takes 10–15 seconds</p>
+                    <TipCarousel />
                   </div>
                 )}
 
-                {!generating && generatedLetter && (
+                {!generating && generationError && (
+                  <div className="text-center py-12">
+                    <div className="bg-slate-800/50 p-6 rounded-lg border border-slate-700 max-w-md mx-auto">
+                      <p className="text-slate-200 mb-4">
+                        We're experiencing high demand right now — please try again in a few minutes.
+                      </p>
+                      <button
+                        onClick={handleRetryGeneration}
+                        className="w-full py-3 px-6 rounded-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!generating && !generationError && generatedLetter && (
                   <div className="space-y-6">
                     {/* Letter Section */}
                     <div>

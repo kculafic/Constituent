@@ -1,7 +1,7 @@
 import { Representative } from '../types';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 interface GenerateLetterRequest {
   representatives: Representative[];
@@ -23,6 +23,41 @@ export async function generateLetter(request: GenerateLetterRequest): Promise<Ge
   const repPhone = representatives[0]?.phones?.[0] || '';
   const billInfo = billNumber ? ` regarding ${billNumber}` : '';
   const personalContext = personalNote ? `\n\nPersonal context from constituent: "${personalNote}"` : '';
+
+  // DEV MODE: Set to true to use mock letters and skip API calls
+  const USE_MOCK_GENERATION = true;
+
+  if (USE_MOCK_GENERATION) {
+    const mockLetter = `[Date]
+
+Dear ${repNames},
+
+I am writing to express my ${position === 'support' ? 'strong support for' : 'opposition to'} ${issue}${billInfo}. As your constituent, I believe this issue is critical to our community and requires immediate attention.
+
+${position === 'support' ? 'Supporting' : 'Opposing'} this measure is essential because it directly impacts the wellbeing of families in our district. The policy implications affect healthcare access, economic opportunity, and the future of our community. I urge you to consider the long-term benefits this will bring to your constituents.
+
+I respectfully request that you ${position === 'support' ? 'vote in favor of' : 'vote against'} this legislation and champion the interests of the people you represent. Thank you for your service and for considering my perspective on this important matter.
+
+Sincerely,
+
+[Your Name]
+[Your Address]
+[Your Phone/Email]`;
+
+    const mockPhoneScript = `Phone: ${repPhone}
+
+Hi, my name is [NAME] and I'm a constituent from [CITY].
+
+I'm calling to ask ${representatives[0]?.name || 'the representative'} to ${position === 'support' ? 'support' : 'oppose'} ${issue}${billInfo}.
+
+This is important to me because it affects our community's access to essential services and impacts families like mine. I believe ${position === 'support' ? 'supporting' : 'opposing'} this measure is the right choice for our district.
+
+I respectfully ask that you ${position === 'support' ? 'vote yes' : 'vote no'} on this issue.
+
+Thank you for your time and for representing our community.`;
+
+    return { letter: mockLetter, phoneScript: mockPhoneScript };
+  }
 
   const letterPrompt = `Write a professional, persuasive letter to ${repNames} ${position === 'support' ? 'supporting' : 'opposing'} ${issue}${billInfo}.${personalContext}
 

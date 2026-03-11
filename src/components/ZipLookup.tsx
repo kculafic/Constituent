@@ -46,7 +46,9 @@ export default function ZipLookup({ onRepsFound }: ZipLookupProps) {
     <div className="w-full">
       <form onSubmit={handleSubmit} className="card-slate">
         <p className="text-l text-slate-200">
-          (NOTE: Currently a Prototype for Illinois Residents only - More States Coming Soon)
+          (NOTE: Constiuent is currently a Prototype for{' '}
+          <u>Illinois Residents only</u>
+          {' '}- More States Coming Soon!)
         </p>
         <br />
         <label htmlFor="street" className="block text-sm font-medium text-slate-200 mb-3">

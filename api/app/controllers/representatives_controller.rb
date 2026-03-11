@@ -118,10 +118,14 @@ class RepresentativesController < ApplicationController
                      else current_term['party']
                      end
 
+        first_term = legislator['terms']&.first
+
         rep = {
           name: legislator.dig('name', 'official_full'),
           office: office,
           party: party_name,
+          bioguideId: bioguide_id,
+          firstTermStart: first_term&.dig('start'),
           phones: current_term['phone'] ? [current_term['phone']] : nil,
           urls: current_term['url'] ? [current_term['url']] : nil,
           address: current_term['address'] ? [current_term['address']] : nil

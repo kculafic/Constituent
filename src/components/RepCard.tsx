@@ -1,91 +1,109 @@
 import { Representative } from '../types';
+import { useState } from 'react';
 
 interface RepCardProps {
   rep: Representative;
+  onClick?: () => void;
+  selected?: boolean;
 }
 
-export default function RepCard({ rep }: RepCardProps) {
+export default function RepCard({ rep, onClick, selected }: RepCardProps) {
+  const [imageError, setImageError] = useState(false);
+
+  // Debug logging
+  console.log('RepCard data:', {
+    name: rep.name,
+    bioguideId: rep.bioguideId,
+    firstTermStart: rep.firstTermStart,
+  });
+
   const getPartyColor = (party?: string) => {
-    if (!party) return 'bg-gray-100 text-gray-800';
-    if (party.toLowerCase().includes('democrat')) return 'bg-blue-100 text-blue-800';
-    if (party.toLowerCase().includes('republican')) return 'bg-red-100 text-red-800';
-    return 'bg-gray-100 text-gray-800';
+    if (!party) return 'bg-gray-500/10 text-gray-400';
+    if (party.toLowerCase().includes('democrat')) return 'bg-blue-500/10 text-blue-400';
+    if (party.toLowerCase().includes('republican')) return 'bg-red-500/10 text-red-400';
+    return 'bg-gray-500/10 text-gray-400';
   };
 
+  const getPartyDotColor = (party?: string) => {
+    if (!party) return 'bg-gray-500';
+    if (party.toLowerCase().includes('democrat')) return 'bg-blue-500';
+    if (party.toLowerCase().includes('republican')) return 'bg-red-500';
+    return 'bg-gray-500';
+  };
+
+  const calculateYearsInOffice = (firstTermStart?: string) => {
+    if (!firstTermStart) return null;
+    const start = new Date(firstTermStart);
+    const now = new Date();
+    const years = now.getFullYear() - start.getFullYear();
+    return years;
+  };
+
+  const getRoleLabel = (office?: string) => {
+    if (!office) return null;
+    if (office.includes('Senator')) return 'U.S. Senator';
+    if (office.includes('Representative')) return 'U.S. Representative';
+    return null;
+  };
+
+  const photoUrl = rep.bioguideId && !imageError
+    ? `https://unitedstates.github.io/images/congress/225x275/${rep.bioguideId}.jpg`
+    : null;
+
+  const yearsInOffice = calculateYearsInOffice(rep.firstTermStart);
+  const roleLabel = getRoleLabel(rep.office);
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+    <button
+      onClick={onClick}
+      className={`w-full text-left rounded-lg p-5 border-2 transition-all ${
+        selected
+          ? 'border-blue-500 bg-blue-900/20'
+          : 'border-slate-700 bg-[#0f1729] hover:border-slate-600'
+      }`}
+    >
       <div className="flex items-start gap-4">
-        {rep.photoUrl && (
+        {photoUrl ? (
           <img
-            src={rep.photoUrl}
+            src={photoUrl}
             alt={rep.name}
-            className="w-20 h-20 rounded-full object-cover"
+            onError={() => setImageError(true)}
+            className="w-16 h-20 rounded object-cover flex-shrink-0"
           />
+        ) : (
+          <div className="w-16 h-20 rounded bg-slate-700 flex items-center justify-center flex-shrink-0">
+            <svg className="w-8 h-8 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+            </svg>
+          </div>
         )}
-        <div className="flex-1">
-          <h3 className="text-xl font-bold text-gray-900">{rep.name}</h3>
-          <p className="text-sm text-gray-600 mt-1">{rep.office}</p>
-          {rep.party && (
-            <span
-              className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${getPartyColor(rep.party)}`}
-            >
-              {rep.party}
-            </span>
+
+        <div className="flex-1 min-w-0">
+          <h3 className="text-xl font-bold text-white mb-1">{rep.name}</h3>
+
+          {roleLabel && (
+            <p className="text-xs text-slate-400 mb-2">{roleLabel}</p>
           )}
+
+          <p className="text-sm text-slate-200 mb-2">{rep.office}</p>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {rep.party && (
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${getPartyColor(rep.party)}`}>
+                <div className={`w-2 h-2 rounded-full ${getPartyDotColor(rep.party)}`}></div>
+                {rep.party}
+              </span>
+            )}
+
+            {yearsInOffice !== null && yearsInOffice > 0 && (
+              <span className="text-xs text-slate-400">
+                {yearsInOffice} {yearsInOffice === 1 ? 'year' : 'years'} in office
+              </span>
+            )}
+          </div>
         </div>
       </div>
-
-      <div className="mt-4 space-y-2">
-        {rep.phones && rep.phones.length > 0 && (
-          <div className="flex items-start gap-2 text-sm">
-            <span className="font-semibold text-gray-700">Phone:</span>
-            <a
-              href={`tel:${rep.phones[0]}`}
-              className="text-blue-900 hover:underline"
-            >
-              {rep.phones[0]}
-            </a>
-          </div>
-        )}
-
-        {rep.address && rep.address.length > 0 && (
-          <div className="flex items-start gap-2 text-sm">
-            <span className="font-semibold text-gray-700">Office:</span>
-            <span className="text-gray-600">{rep.address[0]}</span>
-          </div>
-        )}
-
-        {rep.urls && rep.urls.length > 0 && (
-          <div className="flex items-start gap-2 text-sm">
-            <span className="font-semibold text-gray-700">Website:</span>
-            <a
-              href={rep.urls[0]}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-900 hover:underline"
-            >
-              Visit Website
-            </a>
-          </div>
-        )}
-
-        {rep.channels && rep.channels.length > 0 && (
-          <div className="flex gap-2 mt-3">
-            {rep.channels.map((channel, idx) => (
-              <a
-                key={idx}
-                href={getSocialMediaUrl(channel.type, channel.id)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-500 hover:text-gray-700"
-              >
-                {channel.type}
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    </button>
   );
 }
 

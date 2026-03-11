@@ -11,7 +11,7 @@ export default function Landing({ onBegin }: LandingProps) {
       <p className="text-xl text-slate-200 leading-relaxed mb-12 max-w-xl mx-auto">
         Your representatives hear from lobbyists every day.
         <br />
-        Hearing from YOU, a real constituent — is rarer than you think, and more powerful. Let's make it count.
+        Hearing from you - a real constituent — is more rare than you would think, and more powerful. Let's make it count.
       </p>
       <button
         onClick={onBegin}

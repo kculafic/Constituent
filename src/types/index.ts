@@ -11,6 +11,8 @@ export interface Representative {
     type: string;
     id: string;
   }[];
+  bioguideId?: string;
+  firstTermStart?: string;
 }
 
 export interface CivicInfoResponse {
