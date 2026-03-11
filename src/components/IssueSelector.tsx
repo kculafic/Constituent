@@ -59,20 +59,22 @@ export default function IssueSelector({ onIssueSelect }: IssueSelectorProps) {
 
   return (
     <div className="card-slate">
-      <h2 className="text-3xl font-bold text-white mb-6">
-        Select an Issue
+      <h2 className="text-3xl font-bold text-white mb-4">
+        What issue do you want to address?
       </h2>
+      <p className="text-sm text-slate-300 mb-6 leading-relaxed">
+        The most effective letters focus on a single issue. Pick the one that matters most to you right now — you can always come back for another.
+      </p>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         {ISSUES.map((issue) => (
           <button
             key={issue}
             onClick={() => handleSelect(issue)}
-            className={`px-5 py-3 rounded-full font-semibold transition-all ${
-              selectedIssue === issue
-                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-slate-700 text-slate-200 hover:bg-slate-600 border border-slate-600'
-            }`}
+            className={`px-5 py-3 rounded-full font-semibold transition-all ${selectedIssue === issue
+              ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+              : 'bg-slate-700 text-slate-200 hover:bg-slate-600 border border-slate-600'
+              }`}
           >
             {issue}
           </button>
@@ -83,12 +85,15 @@ export default function IssueSelector({ onIssueSelect }: IssueSelectorProps) {
         <div className="space-y-4 border-t border-slate-700 pt-6">
           <div>
             <label className="block text-sm font-semibold text-white mb-2">
-              Notes (optional)
+              Why does this issue matter to you? (Optional, but highly recommended)
             </label>
+            <p className="text-xs text-slate-400 mb-3 leading-relaxed">
+              This helps us write in your voice. What's your personal connection to this issue — does it affect your family, your job, your neighborhood?
+            </p>
             <textarea
               value={issueNotes}
               onChange={(e) => setIssueNotes(e.target.value)}
-              placeholder={ISSUE_PLACEHOLDERS[selectedIssue]}
+              placeholder="Example: I have a daughter with asthma and the air quality in our neighborhood has gotten noticeably worse over the past two years..."
               rows={4}
               className="w-full px-4 py-3 bg-[#0f1729] border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-white placeholder-slate-500"
             />

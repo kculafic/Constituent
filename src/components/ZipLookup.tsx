@@ -45,6 +45,10 @@ export default function ZipLookup({ onRepsFound }: ZipLookupProps) {
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit} className="card-slate">
+        <p className="text-l text-slate-200">
+          (NOTE: Currently a Prototype for Illinois Residents only - More States Coming Soon)
+        </p>
+        <br />
         <label htmlFor="street" className="block text-sm font-medium text-slate-200 mb-3">
           Street address (optional but improves accuracy)
         </label>
