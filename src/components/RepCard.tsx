@@ -106,17 +106,3 @@ export default function RepCard({ rep, onClick, selected }: RepCardProps) {
     </button>
   );
 }
-
-function getSocialMediaUrl(type: string, id: string): string {
-  const typeLower = type.toLowerCase();
-  if (typeLower === 'twitter' || typeLower === 'x') {
-    return `https://twitter.com/${id}`;
-  }
-  if (typeLower === 'facebook') {
-    return `https://facebook.com/${id}`;
-  }
-  if (typeLower === 'youtube') {
-    return `https://youtube.com/${id}`;
-  }
-  return '#';
-}

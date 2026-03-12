@@ -18,6 +18,7 @@ const ISSUES = [
   'Free Press/Democracy',
 ];
 
+// @ts-expect-error - Kept for future use
 const ISSUE_PLACEHOLDERS: Record<string, string> = {
   'Healthcare': 'How does this affect you personally? Mention any specific bills (e.g. ACA, Medicare for All).',
   'Climate': 'What climate impacts concern you most? Mention specific legislation or local effects.',

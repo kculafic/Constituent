@@ -44,7 +44,6 @@ function App() {
   const [billNumber, setBillNumber] = useState<string>('');
   const [position, setPosition] = useState<'support' | 'oppose' | null>(null);
   const [personalNote, setPersonalNote] = useState<string>('');
-  const [hasSpecificDistrict, setHasSpecificDistrict] = useState(false);
   const [generatedLetter, setGeneratedLetter] = useState<string>('');
   const [generatedPhoneScript, setGeneratedPhoneScript] = useState<string>('');
   const [generating, setGenerating] = useState(false);
@@ -52,9 +51,8 @@ function App() {
   const [repBios, setRepBios] = useState<Map<string, string>>(new Map());
   const [loadingBios, setLoadingBios] = useState(false);
 
-  const handleRepsFound = async (reps: Representative[], hasDistrict: boolean) => {
+  const handleRepsFound = async (reps: Representative[]) => {
     setRepresentatives(reps);
-    setHasSpecificDistrict(hasDistrict);
     setStep('reps');
 
     // Pre-load all bios
@@ -200,7 +198,6 @@ function App() {
     setBillNumber('');
     setPosition(null);
     setPersonalNote('');
-    setHasSpecificDistrict(false);
   };
 
   return (
