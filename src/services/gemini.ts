@@ -1,7 +1,7 @@
 import { Representative } from '../types';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 interface GenerateLetterRequest {
   representatives: Representative[];
@@ -25,7 +25,7 @@ export async function generateLetter(request: GenerateLetterRequest): Promise<Ge
   const personalContext = personalNote ? `\n\nPersonal context from constituent: "${personalNote}"` : '';
 
   // DEV MODE: Set to true to use mock letters and skip API calls
-  const USE_MOCK_GENERATION = true;
+  const USE_MOCK_GENERATION = false;
 
   if (USE_MOCK_GENERATION) {
     const mockLetter = `[Date]
