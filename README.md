@@ -2,9 +2,13 @@
 
 An AI-powered civic tech tool that helps everyday people contact their elected representatives effectively — with letters and phone scripts that actually work.
 
+Live demo on https://constituent-ddgzbrure-kculafics-projects.vercel.app/
+
 ## The Problem
 
 Most civic tools help people *write* a letter. Constituent helps people write one that *gets read*. Congressional offices receive thousands of constituent contacts. Form letters get tallied and filed. Personalized, specific, locally-grounded communication gets attention. This app is built around that distinction.
+
+*Note*: Constituent is currently a prototype for Illinois residents only. The app uses a hardcoded ZIP-to-congressional-district lookup table (api/app/controllers/representatives_controller.rb:24-33) that only contains Illinois ZIP codes. This allows the team to validate the core product concept and user experience before expanding to a nationwide dataset. The UI explicitly states this limitation (src/components/ZipLookup.tsx:49-53).
 
 ## What It Does
 
